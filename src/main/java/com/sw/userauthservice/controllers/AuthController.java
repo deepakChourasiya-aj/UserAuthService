@@ -38,7 +38,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public UserDto login(@RequestBody LoginRequestDto loginRequestDto){
+    public Pair<User,String> login(@RequestBody LoginRequestDto loginRequestDto){
         Pair<User,String> response = authService.login(loginRequestDto.getEmail(),loginRequestDto.getPassword());
         return null;
     }
