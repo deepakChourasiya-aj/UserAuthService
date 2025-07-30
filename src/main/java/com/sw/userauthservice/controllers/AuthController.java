@@ -6,6 +6,7 @@ import com.sw.userauthservice.dtos.UserDto;
 import com.sw.userauthservice.dtos.ValidateTokenRequestDto;
 import com.sw.userauthservice.models.User;
 import com.sw.userauthservice.service.IAuthService;
+import org.antlr.v4.runtime.misc.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +39,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public UserDto login(@RequestBody LoginRequestDto loginRequestDto){
+        Pair<User,String> response = authService.login(loginRequestDto.getEmail(),loginRequestDto.getPassword());
         return null;
     }
 
