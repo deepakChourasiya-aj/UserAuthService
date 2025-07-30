@@ -4,12 +4,16 @@ import com.sw.userauthservice.dtos.LoginRequestDto;
 import com.sw.userauthservice.dtos.SignupRequestDto;
 import com.sw.userauthservice.dtos.UserDto;
 import com.sw.userauthservice.dtos.ValidateTokenRequestDto;
+import com.sw.userauthservice.exceptions.TokenInvalidException;
 import com.sw.userauthservice.models.User;
 import com.sw.userauthservice.service.IAuthService;
 import org.antlr.v4.runtime.misc.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,14 +42,24 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public Pair<User,String> login(@RequestBody LoginRequestDto loginRequestDto){
+    public ResponseEntity<UserDto> login(@RequestBody LoginRequestDto loginRequestDto){
         Pair<User,String> response = authService.login(loginRequestDto.getEmail(),loginRequestDto.getPassword());
-        return null;
+        User user = response.a;
+        String token = response.b;
+
+        MultiValueMap<String,String> headers =  new LinkedMultiValueMap<>();
+
+        headers.add(HttpHeaders.SET_COOKIE,token);
+        return new ResponseEntity<>(from(user),headers,HttpStatus.OK);
     }
 
     @PostMapping("/validateToken")
-    public Boolean validateToken(@RequestBody ValidateTokenRequestDto validateTokenRequestDto){
-        return null;
+    public ResponseEntity<Void> validateToken(@RequestBody ValidateTokenRequestDto validateTokenRequestDto){
+        Boolean result = authService.validateToken(validateTokenRequestDto.getToken(),validateTokenRequestDto.getUserId());
+        if(!result){
+            throw new TokenInvalidException("Please login again!");
+        }
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     UserDto from(User user){
