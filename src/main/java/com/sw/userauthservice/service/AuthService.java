@@ -1,5 +1,9 @@
 package com.sw.userauthservice.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sw.userauthservice.KafkaProducerClient.KafkaProducerClient;
+import com.sw.userauthservice.dtos.EmailDto;
 import com.sw.userauthservice.exceptions.UserAlreadyExistsException;
 import com.sw.userauthservice.exceptions.UserNotSignedUpException;
 import com.sw.userauthservice.models.Session;
@@ -13,6 +17,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.MacAlgorithm;
 import org.antlr.v4.runtime.misc.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +30,13 @@ import java.util.Optional;
 public class AuthService implements IAuthService {
 
     @Autowired
+    private KafkaProducerClient kafkaProducerClient;
+
+    @Autowired
+    public ObjectMapper objectMapper;
+
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -34,7 +46,7 @@ public class AuthService implements IAuthService {
     private SessionRepository sessionRepository;
 
     @Autowired
-    SecretKey secretKey;
+    private SecretKey secretKey;
 
     @Override
     public User signup(String name, String email, String password, String phoneNumber) {
@@ -50,6 +62,18 @@ public class AuthService implements IAuthService {
         // Store encrypted password..
         newUser.setPassword(bCryptPasswordEncoder.encode(password));
         newUser.setPhoneNumber(phoneNumber);
+
+        // Send welcome email.
+        try{
+            EmailDto emailDto = new EmailDto();
+            emailDto.setSubject("Welcome to Dx Fashion Limited");
+            emailDto.setBody("Have a good fashional experience");
+            emailDto.setFrom(email);
+            String message = objectMapper.writeValueAsString(emailDto);
+            kafkaProducerClient.sendMessage("signup",message);
+        }catch (JsonProcessingException exception){
+            throw new RuntimeException(exception.getMessage());
+        }
 
         return userRepository.save(newUser);
     }
